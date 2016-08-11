@@ -34,6 +34,8 @@ import {
   getWidgets,
 } from './database';
 
+import { actUsers } from './services';
+
 /**
  * We get the node interface and field from the Relay library.
  *
@@ -110,6 +112,13 @@ const queryType = new GraphQLObjectType({
     viewer: {
       type: userType,
       resolve: () => getViewer(),
+    },
+    user: {
+      type: userType,
+      resolve(_, query) {
+        const { _id } = query;
+        return actUsers({ role: 'users', cmd: 'find', _id });
+      },
     },
   }),
 });
