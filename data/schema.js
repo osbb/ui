@@ -28,13 +28,10 @@ import {
   // Import methods that your schema can use to interact with your database
   User,
   Widget,
-  getUser,
   getViewer,
   getWidget,
   getWidgets,
 } from './database';
-
-import { actUsers } from './services';
 
 /**
  * We get the node interface and field from the Relay library.
@@ -44,11 +41,11 @@ import { actUsers } from './services';
  */
 const { nodeInterface, nodeField } = nodeDefinitions(
   (globalId) => {
-    const { type, id } = fromGlobalId(globalId);
+    const { type, id: _id } = fromGlobalId(globalId);
     if (type === 'User') {
-      return getUser(id);
+      return User.find({ _id });
     } else if (type === 'Widget') {
-      return getWidget(id);
+      return getWidget(_id);
     }
     return null;
   },
@@ -115,10 +112,7 @@ const queryType = new GraphQLObjectType({
     },
     user: {
       type: userType,
-      resolve(_, query) {
-        const { _id } = query;
-        return actUsers({ role: 'users', cmd: 'find', _id });
-      },
+      resolve: (_, args) => User.find(args),
     },
   }),
 });

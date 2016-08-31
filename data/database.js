@@ -1,17 +1,56 @@
-/**
- *  Copyright (c) 2015, Facebook, Inc.
- *  All rights reserved.
- *
- *  This source code is licensed under the BSD-style license found in the
- *  LICENSE file in the root directory of this source tree. An additional grant
- *  of patent rights can be found in the PATENTS file in the same directory.
- */
+import Promise from 'bluebird';
+import { Producer, Consumer, Client } from 'kafka-node';
+
+const getProducer = new Promise((resolve, reject) => {
+  const client = new Client();
+  const producer = new Producer(client);
+
+  producer.on('ready', () => {
+    resolve(producer);
+  });
+
+  producer.on('error', err => {
+    reject(err);
+  });
+});
+
+const getConsumer = new Promise((resolve, reject) => {
+  const client = new Client();
+  const consumer = new Consumer(client);
+
+  consumer.on('ready', () => {
+    resolve(consumer);
+  });
+
+  consumer.on('error', err => {
+    reject(err);
+  });
+});
 
 // Model types
-class User {
+export class User {
+  find({ _id }) {
+    return getProducer.then(producer => new Promise((resolve, reject) => {
+      producer.send([
+        {
+          topic: 'users',
+          messages: [JSON.stringify({
+            action: 'find',
+            data: { _id },
+          })],
+        },
+      ], (err, data) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(data);
+        }
+      });
+    }));
+  }
 }
 
-class Widget {
+export class Widget {
 }
 
 // Mock data
@@ -27,12 +66,6 @@ const widgets = ['What\'s-it', 'Who\'s-it', 'How\'s-it'].map((name, i) => {
 
 module.exports = {
   // Export methods that your schema can use to interact with your database
-  getUser: id => {
-    if (id === viewer.id) {
-      return viewer;
-    }
-    return null;
-  },
   getViewer: () => viewer,
   getWidget: (id) => widgets.find(w => w.id === id),
   getWidgets: () => widgets,
